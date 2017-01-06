@@ -33,6 +33,9 @@ PostgreSQL::PostgreSQL(WriterFrontend* frontend) : WriterBackend(frontend)
 		);
 
 	default_port = BifConst::LogPostgres::default_port;
+
+	ignore_errors = false;
+	bytea_instead_text = false;
 	}
 
 PostgreSQL::~PostgreSQL()
@@ -78,6 +81,8 @@ string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 	case TYPE_FILE:
 	case TYPE_FUNC:
 		type = "TEXT";
+		if ( bytea_instead_text )
+			type = "BYTEA";
 		break;
 
 	case TYPE_TABLE:
@@ -163,6 +168,14 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 		else if ( default_port >= 0 )
 			conninfo += Fmt(" port = %d", default_port);
 		}
+
+	string errorhandling = LookupParam(info, "continue_on_errors");
+	if ( !errorhandling.empty() && errorhandling == "T" )
+		ignore_errors = true;
+
+	string bytea = LookupParam(info, "bytea_instead_of_text");
+	if ( !bytea.empty() && bytea == "T" )
+		bytea_instead_text = true;
 
 	conn = PQconnectdb(conninfo.c_str());
 
@@ -344,7 +357,6 @@ std::tuple<bool, string> PostgreSQL::CreateParams(const Value* val)
 
 bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** vals)
 	{
-	printf("Call: %s\n", insert.c_str());
 	vector<std::tuple<bool, string>> params; // vector in which we compile the string representation of characters
 
 	for ( int i = 0; i < num_fields; ++i )
@@ -376,10 +388,13 @@ bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** val
 
 	if ( PQresultStatus(res) != PGRES_COMMAND_OK)
 		{
-		printf("Command failed: %s\n", PQerrorMessage(conn));
 		Error(Fmt("Command failed: %s\n", PQerrorMessage(conn)));
-		PQclear(res);
-		return false;
+
+		if ( ! ignore_errors )
+			{
+			PQclear(res);
+			return false;
+			}
 		}
 
 	PQclear(res);

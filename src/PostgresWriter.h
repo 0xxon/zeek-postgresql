@@ -50,6 +50,9 @@ private:
 	string default_dbname;
 	int default_port;
 
+	bool ignore_errors;
+	bool bytea_instead_text;
+
 	std::unique_ptr<threading::formatter::Ascii> io;
 };
 
