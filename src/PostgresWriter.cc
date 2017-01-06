@@ -388,6 +388,7 @@ bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** val
 
 bool PostgreSQL::DoRotate(const char* rotated_path, double open, double close, bool terminating)
 	{
+	FinishedRotation();
 	return true;
 	}
 
