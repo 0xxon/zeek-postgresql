@@ -4,6 +4,7 @@
 #include <string>
 #include <errno.h>
 #include <vector>
+#include <regex>
 
 #include "bro-config.h"
 
@@ -256,12 +257,15 @@ bool PostgreSQL::DoHeartbeat(double network_time, double current_time)
 	return true;
 	}
 
-std::tuple<bool, string> PostgreSQL::CreateParams(const Value* val)
+std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 	{
+	static std::regex curly_re("\\{|\"");
+
 	if ( ! val->present )
-		return std::make_tuple(false, string());
+		return std::make_tuple(false, string(), 0);
 
 	string retval;
+	int retlength = 0;
 
 	switch ( val->type ) {
 
@@ -301,7 +305,7 @@ std::tuple<bool, string> PostgreSQL::CreateParams(const Value* val)
 	case TYPE_FILE:
 	case TYPE_FUNC:
 		if ( ! val->val.string_val.length || val->val.string_val.length == 0 )
-			return std::make_tuple(false, string());
+			return std::make_tuple(false, string(), 0);
 
 		retval = string(val->val.string_val.data, val->val.string_val.length);
 		break;
@@ -313,6 +317,7 @@ std::tuple<bool, string> PostgreSQL::CreateParams(const Value* val)
 		Value** vals;
 
 		string out("{");
+		retlength = 1;
 
 		if ( val->type == TYPE_TABLE )
 			{
@@ -326,7 +331,7 @@ std::tuple<bool, string> PostgreSQL::CreateParams(const Value* val)
 			}
 
 		if ( ! size )
-			return std::make_tuple(false, string());
+			return std::make_tuple(false, string(), 0);
 
 		for ( int i = 0; i < size; ++i )
 			{
@@ -349,36 +354,32 @@ std::tuple<bool, string> PostgreSQL::CreateParams(const Value* val)
 				out += resstr;
 			else
 				{
-				char* escaped = PQescapeLiteral(conn, resstr.c_str(), resstr.size());
-				if ( escaped == nullptr )
-					{
-					Error(Fmt("Error while escaping '%s'", resstr.c_str()));
-					return std::make_tuple(false, string());
-					}
-				else
-					{
-					out += escaped;
-					PQfreemem(escaped);
-					}
+				string escaped = std::regex_replace(resstr, curly_re, "\\$&");
+				out += "\"" + escaped + "\"";
+				retlength += 2+escaped.length();
 				}
 			}
 
 		out += "}";
+		retlength += 1;
 		retval = out;
 		break;
 		}
 
 	default:
 		Error(Fmt("unsupported field format %d", val->type ));
-		return std::make_tuple(false, string());
+		return std::make_tuple(false, string(), 0);
 	}
 
-	return std::make_tuple(true, retval);
+	if ( retlength == 0 )
+		retlength = retval.length();
+
+	return std::make_tuple(true, retval, retlength);
 	}
 
 bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** vals)
 	{
-	vector<std::tuple<bool, string>> params; // vector in which we compile the string representation of characters
+	vector<std::tuple<bool, string, int>> params; // vector in which we compile the string representation of characters
 
 	for ( int i = 0; i < num_fields; ++i )
 		params.push_back(CreateParams(vals[i]));
@@ -386,6 +387,8 @@ bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** val
 	vector<const char*> params_char; // vector in which we compile the character pointers that we
 	// then pass to PQexecParams. These do not have to be cleaned up because the srings will be
 	// cleaned up automatically.
+	vector<int> params_length; // vector in which we compile the lengths of the parameters that we
+	// then pass to PQexecParams
 
 	for ( auto &i: params )
 		{
@@ -393,9 +396,12 @@ bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** val
 			params_char.push_back(nullptr); // null pointer is accepted to signify NULL in parameters
 		else
 			params_char.push_back(std::get<1>(i).c_str());
+
+		params_length.push_back(std::get<2>(i));
 		}
 
 	assert( params_char.size() == num_fields );
+	assert( params_length.size() == num_fields );
 
 	// & of vector is legal - according to current STL standard, vector has to be saved in consecutive memory.
 	PGresult *res = PQexecParams(conn,
@@ -403,7 +409,7 @@ bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** val
 			params_char.size(),
 			NULL,
 			&params_char[0],
-			NULL,
+			&params_length[0],
 			NULL,
 			0);
 
