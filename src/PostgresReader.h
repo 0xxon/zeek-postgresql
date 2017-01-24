@@ -9,7 +9,7 @@
 
 #include "input/ReaderFrontend.h"
 #include "threading/formatters/Ascii.h"
-#include "libpq-fe.h"
+#include <libpq-fe.h>
 
 namespace input { namespace reader {
 
@@ -35,7 +35,8 @@ protected:
 	bool DoHeartbeat(double network_time, double current_time) override;
 
 private:
-
+	// note - EscapeIdentifier is replicated in writier
+	string EscapeIdentifier(const char* identifier);
 	string LookupParam(const ReaderInfo& info, const string name) const;
 	std::unique_ptr<threading::Value> EntryToVal(string s, const threading::Field* type);
 

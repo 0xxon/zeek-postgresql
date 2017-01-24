@@ -99,15 +99,16 @@ string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 }
 
 // preformat the insert string that we only need to create once during our lifetime
-void PostgreSQL::CreateInsert(int num_fields, const Field* const * fields)
+bool PostgreSQL::CreateInsert(int num_fields, const Field* const * fields)
 	{
 	string names = "INSERT INTO "+table+" ( ";
 	string values("VALUES (");
 
 	for ( int i = 0; i < num_fields; ++i )
 		{
-		string fieldname = fields[i]->name;
-		std::replace( fieldname.begin(), fieldname.end(), '.', '$' ); // postgres does not like "." in row names.
+		string fieldname = EscapeIdentifier(fields[i]->name);
+		if ( fieldname.empty() )
+			return false;
 
 		if ( i != 0 )
 			{
@@ -120,6 +121,8 @@ void PostgreSQL::CreateInsert(int num_fields, const Field* const * fields)
 		}
 
 	insert = names + ") " + values + ");";
+
+	return true;
 	}
 
 string PostgreSQL::LookupParam(const WriterInfo& info, const string name) const
@@ -131,10 +134,24 @@ string PostgreSQL::LookupParam(const WriterInfo& info, const string name) const
 		return it->second;
 	}
 
+// note - EscapeIdentifier is replicated in reader
+string PostgreSQL::EscapeIdentifier(const char* identifier)
+	{
+	char* escaped = PQescapeIdentifier(conn, identifier, strlen(identifier));
+	if ( escaped == nullptr )
+		{
+		Error(Fmt("Error while escaping identifier '%s': %s", identifier, PQerrorMessage(conn)));
+		return string();
+		}
+	string out = escaped;
+	PQfreemem(escaped);
+
+	return out;
+	}
+
 bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 			    const Field* const * fields)
 	{
-	table = info.path;
 	string conninfo = LookupParam(info, "conninfo");
 	if ( conninfo.empty() )
 		{
@@ -185,6 +202,11 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 		return false;
 		}
 
+	table = EscapeIdentifier(info.path);
+	if ( table.empty() )
+		return false;
+
+
 	string create = "CREATE TABLE IF NOT EXISTS "+table+" (\n"
 		"id SERIAL UNIQUE NOT NULL";
 
@@ -194,9 +216,10 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 
 		create += ",\n";
 
-		string name = field->name;
-		std::replace( name.begin(), name.end(), '.', '$' ); // postgres does not like "." in row names.
-		create += name;
+		string escaped = EscapeIdentifier(field->name);
+		if ( escaped.empty() )
+			return false;
+		create += escaped;
 
 		string type = GetTableType(field->type, field->subtype);
 
@@ -215,9 +238,7 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 		return false;
 		}
 
-	CreateInsert(num_fields, fields);
-
-	return true;
+	return CreateInsert(num_fields, fields);
 	}
 
 bool PostgreSQL::DoFlush(double network_time)

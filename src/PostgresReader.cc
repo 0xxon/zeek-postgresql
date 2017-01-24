@@ -91,6 +91,21 @@ bool PostgreSQL::DoInit(const ReaderInfo& info, int arg_num_fields, const thread
 	return true;
 	}
 
+// note - EscapeIdentifier is replicated in writer
+string PostgreSQL::EscapeIdentifier(const char* identifier)
+	{
+	char* escaped = PQescapeIdentifier(conn, identifier, strlen(identifier));
+	if ( escaped == nullptr )
+		{
+		Error(Fmt("Error while escaping identifier '%s': %s", identifier, PQerrorMessage(conn)));
+		return string();
+		}
+	string out = escaped;
+	PQfreemem(escaped);
+
+	return out;
+	}
+
 std::unique_ptr<Value> PostgreSQL::EntryToVal(string s, const threading::Field* field)
 	{
 	std::unique_ptr<Value> val(new Value(field->type, true));
@@ -221,8 +236,9 @@ bool PostgreSQL::DoUpdate()
 	mapping.reserve(num_fields);
 
 	for ( int i = 0; i < num_fields; ++i ) {
-		string fieldname = fields[i]->name;
-		std::replace( fieldname.begin(), fieldname.end(), '.', '$' ); // for the moment, expect the same fieldname replacement as we do in the writer.
+		string fieldname = EscapeIdentifier(fields[i]->name);
+		if ( fieldname.empty() )
+			return false;
 
 		int pos = PQfnumber(res, fieldname.c_str());
 		if ( pos == -1 )

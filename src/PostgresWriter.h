@@ -37,9 +37,11 @@ protected:
 
 private:
 	string LookupParam(const WriterInfo& info, const string name) const;
+	// note - EscapeIdentifier is replicated in reader
+	string EscapeIdentifier(const char* identifier);
 	std::tuple<bool, string> CreateParams(const threading::Value* val);
 	string GetTableType(int, int);
-	void CreateInsert(int num_fields, const threading::Field* const* fields);
+	bool CreateInsert(int num_fields, const threading::Field* const* fields);
 
 	PGconn *conn;
 

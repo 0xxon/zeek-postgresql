@@ -15,10 +15,10 @@ CREATE TABLE conn (
     id integer NOT NULL,
     ts double precision,
     uid text,
-    "id$orig_h" inet,
-    "id$orig_p" integer,
-    "id$resp_h" inet,
-    "id$resp_p" integer,
+    "id.orig_h" inet,
+    "id.orig_p" integer,
+    "id.resp_h" inet,
+    "id.resp_p" integer,
     proto text,
     service text,
     duration double precision,
@@ -43,7 +43,7 @@ CREATE SEQUENCE conn_id_seq
     CACHE 1;
 ALTER SEQUENCE conn_id_seq OWNED BY conn.id;
 
-COPY conn (id, ts, uid, "id$orig_h", "id$orig_p", "id$resp_h", "id$resp_p", proto, service, duration, orig_bytes, resp_bytes, conn_state, local_orig, local_resp, missed_bytes, history, orig_pkts, orig_ip_bytes, resp_pkts, resp_ip_bytes, tunnel_parents) FROM stdin;
+COPY conn (id, ts, uid, "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", proto, service, duration, orig_bytes, resp_bytes, conn_state, local_orig, local_resp, missed_bytes, history, orig_pkts, orig_ip_bytes, resp_pkts, resp_ip_bytes, tunnel_parents) FROM stdin;
 1	1300475167.09653497	CHhAvVGS1DHFjwGM9	141.142.220.202	5353	224.0.0.251	5353	udp	dns	\N	\N	\N	S0	\N	\N	0	D	1	73	0	0	{a,b}
 2	1300475167.09701204	ClEkJM2Vm5giqnMf4h	fe80::217:f2ff:fed7:cf65	5353	ff02::fb	5353	udp	dns	\N	\N	\N	S0	\N	\N	0	D	1	199	0	0	\N
 3	1300475167.09981608	C4J4Th3PJpwUYZZ6gc	141.142.220.50	5353	224.0.0.251	5353	udp	dns	\N	\N	\N	S0	\N	\N	0	D	1	179	0	0	\N
