@@ -1,8 +1,6 @@
 // See the file "COPYING" in the main distribution directory for copyright.
 
-#include <algorithm> // for replace
-#include <fstream>
-#include <sstream>
+#include <regex>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -168,27 +166,73 @@ std::unique_ptr<Value> PostgreSQL::EntryToVal(string s, const threading::Field* 
 		// Then - initialization for table.
 		// Then - initialization for vector.
 		{
-		istringstream splitstream(s);
+		bool real_array = true;
+		static std::regex comma_re(",");
+		// (?:                  -> first group, non-marking. Group describes double-quoted syntax
+		//    \"                -> array element has to start with double quote
+		//              (.*?)   -> non-greedy capture (number 1) for content of element
+		//    (?!\\\\)\"        -> element ends with a double quote that is not escaped (no \ in front)
+		//    (?:,|$)           -> followed either by comma or end of string
+		//  )
+		//  |
+		//  (?:                 -> second group, non-marking. Group describes non-double-quoted syntax
+		//    ([^,{}\"\\\\]+?)  -> non-greedy capture (number 2). Minimal length of 1 (zero-length has to
+		//                         be quoted). May not contain a number of special characters.
+		//    (?:,|$)           -> followed either by comma or end of string
+		//  )
+		static std::regex elements_re("(?:\"(.*?)(?!\\\\)\"(?:,|$))|(?:([^,{}\"\\\\]+?)(?:,|$))");
+		static std::regex escaped_re("(?:\\\\(\\\\))|(?:\\\\(\"))");
+
+		// assume it is a real array. We don't really have a much better
+		// way to figure this out because the Postgres code that can easily tell us the
+		// SQL type lives in the backend and cannot easily be included here...
+		auto it = std::sregex_token_iterator(s.begin()+1, s.end()-1, elements_re, {1,2});
+		static std::sregex_token_iterator end;
+
+		// Oh Not a postgres array. Just assume Bro-style comma separated values.
+		if ( s.front() != '{' || s.back() != '}' )
+			{
+			real_array = false;
+			it = std::sregex_token_iterator(s.begin(), s.end(), comma_re, -1);
+			}
 
 		unique_ptr<Field> newfield(new Field(*field));
 		newfield->type = field->subtype;
 
 		std::vector<std::unique_ptr<Value>> vals;
 
-		while ( splitstream )
+		int match_number = 0;
+		while ( it != end )
 			{
-			string element;
+			match_number++;
+			if ( ! (*it).matched )
+				{
+				it++;
+				continue;
+				}
 
-			if ( !getline(splitstream, element, ',') )
-				break;
+			string element = *it;
 
-			auto newval = EntryToVal(element, newfield.get());
-			if ( newval == nullptr ) {
-				Error("Error while reading set");
-				return nullptr;
-			}
+			// real postgres array and double-colons -> unescape
+			if ( real_array && match_number % 2 == 1 )
+				element = std::regex_replace(element, escaped_re, "$1$2");
 
-			vals.push_back(std::move(newval));
+			// real postgres array, no double-colons, string equals null -> real null
+			if ( real_array && match_number % 2 == 0 && element == "NULL" )
+				// note that this actually leeds to problems at the moment downstream.
+				vals.emplace_back(new Value(field->subtype, false));
+			else
+				{
+				auto newval = EntryToVal(element, newfield.get());
+				if ( newval == nullptr )
+					{
+					Error("Error while reading set");
+					return nullptr;
+					}
+				vals.push_back(std::move(newval));
+				}
+
+			it++;
 			}
 
 
@@ -264,9 +308,9 @@ bool PostgreSQL::DoUpdate()
 				ovals.emplace_back(std::unique_ptr<Value>(new Value(fields[j]->type, false)));
 			else
 				{
-				// str will be cleaned up by PQclear.
-				char *str = PQgetvalue(res, i, mapping[j]);
-				auto res = EntryToVal(str, fields[j]);
+				// PQgetvalue result will be cleaned up by PQclear.
+				string value (PQgetvalue(res, i, mapping[j]), PQgetlength(res, i, mapping[j]));
+				auto res = EntryToVal(value, fields[j]);
 				if ( res == nullptr )
 					{
 					// error occured, let's break out of this line. Just removing ovals will get rid of everything.

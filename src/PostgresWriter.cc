@@ -1,6 +1,5 @@
 // See the file "COPYING" in the main distribution directory for copyright.
 
-#include <algorithm>
 #include <string>
 #include <errno.h>
 #include <vector>
@@ -259,7 +258,7 @@ bool PostgreSQL::DoHeartbeat(double network_time, double current_time)
 
 std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 	{
-	static std::regex curly_re("\\{|\"");
+	static std::regex curly_re("\\\\|\"");
 
 	if ( ! val->present )
 		return std::make_tuple(false, string(), 0);
