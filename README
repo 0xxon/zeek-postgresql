@@ -23,8 +23,8 @@ If PostgreSQL is installed in a non-standard location, add
 ``--with-postgresql=<postgresql-base-directory`` to the ``configure`` command.
 If everything built and installed correctly, you should see this::
 
-    # bro -N Bro::PostgreSQL
-    Bro::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version 0.1)
+    # bro -N Johanna::PostgreSQL
+    Johanna::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version 0.1)
 
 Usage
 -----

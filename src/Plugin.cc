@@ -13,7 +13,7 @@ plugin::Configuration Plugin::Configure()
 	AddComponent(new ::input::Component("PostgreSQL", ::input::reader::PostgreSQL::Instantiate));
 
 	plugin::Configuration config;
-	config.name = "Bro::PostgreSQL";
+	config.name = "Johanna::PostgreSQL";
 	config.description = "PostgreSQL log writer and input reader";
 	config.version.major = 0;
 	config.version.minor = 2;

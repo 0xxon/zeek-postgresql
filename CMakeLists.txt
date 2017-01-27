@@ -12,7 +12,7 @@ if (PostgreSQL_FOUND)
     link_directories(${PostgreSQL_LIBRARY_DIRS})
 
 
-    bro_plugin_begin(Bro PostgreSQL)
+    bro_plugin_begin(Johanna PostgreSQL)
     bro_plugin_cc(src/PostgresWriter.cc)
     bro_plugin_cc(src/PostgresReader.cc)
     bro_plugin_cc(src/Plugin.cc)
