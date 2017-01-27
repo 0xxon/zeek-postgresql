@@ -35,6 +35,8 @@ export {
 		vc: vector of count;
 		ve: vector of string;
 		f: function(i: count) : string;
+		vo: vector of string &optional;
+		so: string &optional;
 	} &log;
 }
 
@@ -88,7 +90,7 @@ event bro_init()
 		$iv=100secs,
 		$s="hurz",
 		$sc=set(1,2,3,4),
-		$ss=set("\\\"\\{}", "\"", "{{{{{}'", "{\"\"\\hello", "a\tb\nc\rd\x01\x02\x03\x7Ee"),
+		$ss=set("", "\\\"\\{}", "\"", "{{{{{}'", "{\"\"\\hello", "a\tb\nc\rd\x01\x02\x03\x7Ee"),
 		$se=empty_set,
 		$vc=vector(10, 20, 30),
 		$ve=empty_vector,

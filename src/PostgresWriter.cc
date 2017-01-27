@@ -303,9 +303,6 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 	case TYPE_STRING:
 	case TYPE_FILE:
 	case TYPE_FUNC:
-		if ( ! val->val.string_val.length || val->val.string_val.length == 0 )
-			return std::make_tuple(false, string(), 0);
-
 		retval = string(val->val.string_val.data, val->val.string_val.length);
 		break;
 

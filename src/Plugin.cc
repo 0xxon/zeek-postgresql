@@ -3,9 +3,9 @@
 #include "PostgresWriter.h"
 #include "PostgresReader.h"
 
-namespace plugin { namespace Bro_PostgreSQL { Plugin plugin; } }
+namespace plugin { namespace Johanna_PostgreSQL { Plugin plugin; } }
 
-using namespace plugin::Bro_PostgreSQL;
+using namespace plugin::Johanna_PostgreSQL;
 
 plugin::Configuration Plugin::Configure()
 	{
@@ -16,6 +16,6 @@ plugin::Configuration Plugin::Configure()
 	config.name = "Bro::PostgreSQL";
 	config.description = "PostgreSQL log writer and input reader";
 	config.version.major = 0;
-	config.version.minor = 1;
+	config.version.minor = 2;
 	return config;
 	}

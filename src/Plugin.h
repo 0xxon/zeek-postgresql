@@ -5,7 +5,7 @@
 #include <plugin/Plugin.h>
 
 namespace plugin {
-namespace Bro_PostgreSQL {
+namespace Johanna_PostgreSQL {
 
 class Plugin : public ::plugin::Plugin
 {
