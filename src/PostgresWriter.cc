@@ -99,7 +99,7 @@ string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 }
 
 // preformat the insert string that we only need to create once during our lifetime
-bool PostgreSQL::CreateInsert(int num_fields, const Field* const * fields)
+bool PostgreSQL::CreateInsert(int num_fields, const Field* const * fields, std::string add_string)
 	{
 	string names = "INSERT INTO "+table+" ( ";
 	string values("VALUES (");
@@ -120,7 +120,7 @@ bool PostgreSQL::CreateInsert(int num_fields, const Field* const * fields)
 		values += "$" + std::to_string(i+1);
 		}
 
-	insert = names + ") " + values + ");";
+	insert = names + ") " + values + ") " + add_string + ";";
 
 	return true;
 	}
@@ -186,6 +186,8 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 			conninfo += Fmt(" port = %d", default_port);
 		}
 
+	string add_string = LookupParam(info, "sql_addition");
+
 	string errorhandling = LookupParam(info, "continue_on_errors");
 	if ( !errorhandling.empty() && errorhandling == "T" )
 		ignore_errors = true;
@@ -238,7 +240,7 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 		return false;
 		}
 
-	return CreateInsert(num_fields, fields);
+	return CreateInsert(num_fields, fields, add_string);
 	}
 
 bool PostgreSQL::DoFlush(double network_time)

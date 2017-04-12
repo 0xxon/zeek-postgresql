@@ -41,7 +41,7 @@ private:
 	string EscapeIdentifier(const char* identifier);
 	std::tuple<bool, string, int> CreateParams(const threading::Value* val);
 	string GetTableType(int, int);
-	bool CreateInsert(int num_fields, const threading::Field* const* fields);
+	bool CreateInsert(int num_fields, const threading::Field* const* fields, const std::string add_string = "");
 
 	PGconn *conn;
 
