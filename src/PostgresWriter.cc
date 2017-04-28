@@ -57,7 +57,7 @@ string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 	case TYPE_COUNT:
 	case TYPE_COUNTER:
 	case TYPE_PORT:
-		type = "integer";
+		type = "bigint";
 		break;
 
 	/*
