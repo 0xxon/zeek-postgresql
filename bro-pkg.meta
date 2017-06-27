@@ -2,4 +2,6 @@
 description = A PostgreSQL reader and writer for Bro.
 tags = bro plugin, PostgreSQL, reader, writer, input
 build_command = ( ./configure --bro-dist=%(bro_dist)s --with-postgresql-inc=`pg_config --includedir` --with-postgresql-server-inc=`pg_config --includedir-server`  --with-postgresql-lib=`pg_config --libdir` && make )
+test_command = cd tests && btest -d
 plugin_dir = build
+version = master
