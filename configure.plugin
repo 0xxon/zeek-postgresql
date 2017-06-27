@@ -19,17 +19,17 @@ plugin_option()
             return 0
             ;;
 
-				--with-postresql-inc=*)
+				--with-postgresql-inc=*)
 						append_cache_entry PostgreSQL_INCLUDE_DIR PATH $optarg
 						return 0
 						;;
 
-				--with-postresql-server-inc=*)
+				--with-postgresql-server-inc=*)
 						append_cache_entry PostgreSQL_TYPE_INCLUDE_DIR PATH $optarg
 						return 0
 						;;
 
-				--with-postresql-lib=*)
+				--with-postgresql-lib=*)
 						append_cache_entry PostgreSQL_LIBRARY_DIR PATH $optarg
 						append_cache_entry PostgreSQL_LIBRARY_DIR PATH $optarg
 						return 0
