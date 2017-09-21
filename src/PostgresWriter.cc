@@ -77,6 +77,9 @@ string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 		break;
 
 	case TYPE_ENUM:
+		type = "TEXT";
+		break;
+
 	case TYPE_STRING:
 	case TYPE_FILE:
 	case TYPE_FUNC:

@@ -1,82 +1,168 @@
 
-================================================
 Logging to, and input from, PostgreSQL Databases
 ================================================
 
 Introduction and Warning
-------------------------
+========================
 
-This plugin offers the possibility to log to PostgreSQL databases as
-well as to read information from PostgreSQL databases. Note that the
-current state of the plugin is still experimental.
+This plugin allows logging to as well as reading from PostgreSQL
+databases. While the basic functionality seems to work, it has not
+seen much real-life testing and no functionality guarantees are made.
+This plugin should be considered experimental.
 
 Installation
 ------------
 
-After installing PostgreSQL, the following command will compile and install
-the Bro PostgreSQL module, assuming it can find the headers in a standard
-location::
+After installing PostgreSQL, you can install the Bro PostgreSQL module
+either using bro-pkg, or manually via the command-line.
 
-    # ./configure && make && make install
+To install the plugin using bro-pkg, use
+
+```console
+# bro-pkg install 0xxon/bro-postgresql
+```
+
+To install manually from the cloned repository, use::
+
+```console
+# ./configure && make && make install
+```
 
 If PostgreSQL is installed in a non-standard location, add
 ``--with-postgresql=<postgresql-base-directory`` to the ``configure`` command.
-If everything built and installed correctly, you should see this::
+Use bro -N to verify correct installation:
 
-    # bro -N Johanna::PostgreSQL
-    Johanna::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version 0.1)
+```console
+# bro -N Johanna::PostgreSQL
+Johanna::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version 0.1)
+```
 
-Usage
------
+Logging Data into PostgreSQL databases
+-------------------------------------
 
-The easiest way to add logging to PostgreSQL is to add a logging filter. An
-example, to also push the conn.log to PostgreSQL is:
+The easiest way to add PostgreSQL logging is by adding a logging filter to an
+already existing logging stream. This first example also sends the conn.log
+to PostgreSQL:
 
-.. console::
+```bro
+event bro_init()
+  {
+	local filter: Log::Filter = [$name="postgres", $path="conn", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb")];
+	Log::add_filter(Conn::LOG, filter);
+  }
+```
 
-    event bro_init()
-    {
-    	local filter: Log::Filter = [$name="postgres", $path="conn", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb")];
-    	Log::add_filter(Conn::LOG, filter);
-    }
+This will write to a database named testdb into the table named conn. Note that
+the table will be automatically be created by the PostgreSQL plugin, if it does
+not yet exist. If a table with the specified name already exists, it is used;
+the existing columns have to be compatible with the column names and types that
+the Bro plugin expects.
 
-This will write to a database named testdb into the table named conn. To
-create this database, issue commands similar to::
+Data can be read from PostgreSQL using a script similar to:
 
-    initdb testdb
-    postgres -D testdb
-    createdb testdb
+```bro
+redef exit_only_after_terminate = T;
 
-The table will automatically be created if it does not exist.
+type InfoType: record {
+	ts: time;
+	uid: string;
+	duration: interval;
+};
 
-To read back this data, use a script like this:
+event line(description: Input::EventDescription, tpe: Input::Event, r: InfoType)
+	{
+	print r;
+	}
 
-.. console::
+event bro_init()
+  {
+	Input::add_event([$source="select ts, uid, duration from conn;", $name="postgres", $fields=InfoType, $ev=line, $want_record=T,
+		$reader=Input::READER_POSTGRESQL, $config=table(["dbname"]="testdb")]);
+	}
 
-    redef exit_only_after_terminate = T;
+event Input::end_of_data(name: string, source:string)
+	{
+	print "End of data";
+	terminate();
+	}
+```
 
-    type InfoType: record {
-    	ts: time;
-    	uid: string;
-    	duration: interval;
-    };
-
-    event line(description: Input::EventDescription, tpe: Input::Event, r: InfoType)
-    	{
-    	print r;
-    	}
-
-    event bro_init()
-    	{
-    	Input::add_event([$source="select ts, uid, duration from conn;", $name="postgres", $fields=InfoType, $ev=line, $want_record=T,
-    		$reader=Input::READER_POSTGRESQL, $config=table(["dbname"]="testdb")]);
-    	}
-
-    event Input::end_of_data(name: string, source:string)
-    	{
-    	print "End of data";
-    	terminate();
-    	}
-
-Please note that the plugin connects to PostgreSQL as the user running Bro,
+By default, the plugin connects to PostgreSQL as the user running Bro,
 without supplying any additional username or password.
+
+Type mapping
+============
+
+The writer automatically maps the Bro types to the following PostgreSQL data
+types:
+
+<table>
+<tr>
+<th>Bro type</th>
+<th>PostgreSQL type</th>
+</tr><tr><td>Bool</td><td>boolean</td>
+</tr><tr><td>int</td><td>bigint</td>
+</tr><tr><td>count</td><td>bigint</td>
+</tr><tr><td>port</td><td>bigint</td>
+</tr><tr><td>addr</td><td>inet</td>
+</tr><tr><td>subnet</td><td>inet</td>
+</tr><tr><td>time</td><td>double precision</td>
+</tr><tr><td>interval</td><td>double precision</td>
+</tr><tr><td>double</td><td>double precision</td>
+</tr><tr><td>enum</td><td>text</td>
+</tr><tr><td>string</td><td>text/bytea</td>
+</tr><tr><td>func</td><td>text/bytea</td>
+</tr><tr><td>set[type]</td><td>type[]</td>
+</tr><tr><td>vector[type]</td><td>type[]</td>
+</tr>
+</table>
+
+For string and func, bytea is used if the $config option "bytea_instead_of_text"
+is set.
+
+Configuration options: PostgreSQL Writer
+========================================
+
+The PostgreSQL writer supports the following configuration options that can be
+passed in $config:
+
+- *hostname*: hostname to connect to
+
+- *port*: port to connect to
+
+- *dbname*: name of database to connect to
+
+- *conninfo*: connection string using parameter key words as defined in
+  https://www.postgresql.org/docs/9.3/static/libpq-connect.html. Can be used
+  to pass usernames, passwords, etc. hostname, port, and dbname are ignored if
+  conninfo is specified.
+
+  Example: host=127.0.0.1 user=johanna
+
+- *sql_addition*: SQL string that is appended to the insert statement
+  generated by the plugin. This can be used to specify a conflict clause
+  like: "ON CONFLICT DO NOTHING"
+
+- *continue_on_errors*: ignore insert errors and do not kill the database
+  connection.
+
+- *bytea_instead_of_text*: write strings/funcs to as bytea instead of text.
+
+Configuration options: PostgreSQL Reader
+========================================
+
+The PostgreSQL reader supports the following configuration options that can be
+passed in $config:
+
+- *hostname*: hostname to connect to
+
+- *port*: port to connect to
+
+- *dbname*: name of database to connect to
+
+- *conninfo*: connection string using parameter key words as defined in
+  https://www.postgresql.org/docs/9.3/static/libpq-connect.html. Can be used
+  to pass usernames, passwords, etc. hostname, port, and dbname are ignored if
+  conninfo is specified.
+
+  Example: host=127.0.0.1 user=johanna
