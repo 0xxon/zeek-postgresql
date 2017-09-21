@@ -47,8 +47,8 @@ to PostgreSQL:
 ```bro
 event bro_init()
   {
-	local filter: Log::Filter = [$name="postgres", $path="conn", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb")];
-	Log::add_filter(Conn::LOG, filter);
+  local filter: Log::Filter = [$name="postgres", $path="conn", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb")];
+  Log::add_filter(Conn::LOG, filter);
   }
 ```
 
@@ -64,27 +64,27 @@ Data can be read from PostgreSQL using a script similar to:
 redef exit_only_after_terminate = T;
 
 type InfoType: record {
-	ts: time;
-	uid: string;
-	duration: interval;
+  ts: time;
+  uid: string;
+  duration: interval;
 };
 
 event line(description: Input::EventDescription, tpe: Input::Event, r: InfoType)
-	{
-	print r;
-	}
+  {
+  print r;
+  }
 
 event bro_init()
   {
-	Input::add_event([$source="select ts, uid, duration from conn;", $name="postgres", $fields=InfoType, $ev=line, $want_record=T,
-		$reader=Input::READER_POSTGRESQL, $config=table(["dbname"]="testdb")]);
-	}
+  Input::add_event([$source="select ts, uid, duration from conn;", $name="postgres", $fields=InfoType, $ev=line, $want_record=T,
+    $reader=Input::READER_POSTGRESQL, $config=table(["dbname"]="testdb")]);
+  }
 
 event Input::end_of_data(name: string, source:string)
-	{
-	print "End of data";
-	terminate();
-	}
+  {
+  print "End of data";
+  terminate();
+  }
 ```
 
 By default, the plugin connects to PostgreSQL as the user running Bro,
