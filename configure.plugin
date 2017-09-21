@@ -15,7 +15,6 @@ plugin_option()
     case "$1" in
         --with-postgresql=*)
             append_cache_entry PostgreSQL_ROOT PATH $optarg
-            append_cache_entry PostgreSQL_ROOT PATH $optarg/include
             return 0
             ;;
 
@@ -30,7 +29,6 @@ plugin_option()
 						;;
 
 				--with-postgresql-lib=*)
-						append_cache_entry PostgreSQL_LIBRARY_DIR PATH $optarg
 						append_cache_entry PostgreSQL_LIBRARY_DIR PATH $optarg
 						return 0
 						;;
