@@ -1,4 +1,4 @@
-Johanna::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version 0.2)
+Johanna::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version)
     [Writer] PostgreSQL (Log::WRITER_POSTGRESQL)
     [Reader] PostgreSQL (Input::READER_POSTGRESQL)
     [Constant] LogPostgres::default_hostname
