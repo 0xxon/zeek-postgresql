@@ -5,7 +5,7 @@
 #include <vector>
 #include <regex>
 
-#include "bro-config.h"
+#include "zeek-config.h"
 
 #include "NetVar.h"
 #include "threading/SerialTypes.h"

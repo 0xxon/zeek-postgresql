@@ -5,7 +5,7 @@
 # @TEST-EXEC: sleep 5
 # @TEST-EXEC: createdb -p 7772 testdb
 # @TEST-EXEC: psql -p 7772 testdb < dump.sql || true
-# @TEST-EXEC: btest-bg-run bro bro %INPUT
+# @TEST-EXEC: btest-bg-run zeek zeek %INPUT
 # @TEST-EXEC: btest-bg-wait 10 || true
 # @TEST-EXEC: pg_ctl stop -D postgres -m fast
 # @TEST-EXEC: btest-diff out
@@ -92,7 +92,7 @@ event line(description: Input::EventDescription, tpe: Input::Event, r: Conn::Inf
 	print outfile, r;
 	}
 
-event bro_init()
+event zeek_init()
 	{
 	outfile = open("../out");
 	Input::add_event([$source="select * from conn;", $name="postgres", $fields=Conn::Info, $ev=line, $want_record=T,

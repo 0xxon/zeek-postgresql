@@ -4,13 +4,39 @@
 # @TEST-EXEC: pg_ctl start -D postgres -l serverlog
 # @TEST-EXEC: sleep 5
 # @TEST-EXEC: createdb -p 7772 testdb
-# @TEST-EXEC: bro %INPUT || true
+# @TEST-EXEC: psql -p 7772 testdb < create.sql
+# @TEST-EXEC: zeek %INPUT || true
 # @TEST-EXEC: echo "select * from ssh" | psql -A -p 7772 testdb >ssh.out 2>&1 || true
 # TEST-EXEC: pg_dump -p 7772 -a testdb > ssh.out 2>&1 || true
 # @TEST-EXEC: pg_ctl stop -D postgres -m fast
 # @TEST-EXEC: btest-diff ssh.out
 
 # Test all possible types.
+
+@TEST-START-FILE create.sql
+CREATE TABLE ssh (
+id SERIAL UNIQUE NOT NULL,
+b boolean,
+i integer,
+e text,
+c integer,
+p integer,
+sn inet,
+a inet,
+d double precision,
+t double precision,
+iv double precision,
+s varchar(2),
+sc integer[],
+ss text[],
+se text[],
+vc integer[],
+ve text[],
+f text
+);
+@TEST-END-FILE
+
+
 
 module SSHTest;
 
@@ -35,8 +61,6 @@ export {
 		vc: vector of count;
 		ve: vector of string;
 		f: function(i: count) : string;
-		vo: vector of string &optional;
-		so: string &optional;
 	} &log;
 }
 
@@ -48,10 +72,10 @@ function foo(i : count) : string
 		return "Bar";
 	}
 
-event bro_init()
+event zeek_init()
 {
 	Log::create_stream(SSHTest::LOG, [$columns=Log]);
-	local filter: Log::Filter = [$name="postgres", $path="ssh", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb", ["port"]="7772")];
+	local filter: Log::Filter = [$name="postgres", $path="ssh", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb", ["port"]="7772", ["continue_on_errors"]="T")];
 	Log::add_filter(SSHTest::LOG, filter);
 
 	local empty_set: set[string];
@@ -68,7 +92,7 @@ event bro_init()
 		$d=3.14,
 		$t=network_time(),
 		$iv=100secs,
-		$s="hurz",
+		$s="hurtz",
 		$sc=set(1,2,3,4),
 		$ss=set("AA", "BB", "CC"),
 		$se=empty_set,
@@ -88,9 +112,9 @@ event bro_init()
 		$d=3.14,
 		$t=network_time(),
 		$iv=100secs,
-		$s="hurz",
+		$s="h",
 		$sc=set(1,2,3,4),
-		$ss=set("", "\\\"\\{}", "\"", "{{{{{}'", "{\"\"\\hello", "a\tb\nc\rd\x01\x02\x03\x7Ee"),
+		$ss=set("AA", "BB", "CC"),
 		$se=empty_set,
 		$vc=vector(10, 20, 30),
 		$ve=empty_vector,

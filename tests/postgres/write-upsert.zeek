@@ -5,7 +5,7 @@
 # @TEST-EXEC: sleep 5
 # @TEST-EXEC: createdb -p 7772 testdb
 # @TEST-EXEC: psql -p 7772 testdb < create.sql
-# @TEST-EXEC: bro %INPUT || true
+# @TEST-EXEC: zeek %INPUT || true
 # @TEST-EXEC: echo "select * from testtable" | psql -A -p 7772 testdb >ssh.out 2>&1 || true
 # @TEST-EXEC: pg_ctl stop -D postgres -m fast
 # @TEST-EXEC: btest-diff ssh.out
@@ -37,7 +37,7 @@ function foo(i : count) : string
 		return "Bar";
 	}
 
-event bro_init()
+event zeek_init()
 {
 	Log::create_stream(SSHTest::LOG, [$columns=Log]);
 	local filter: Log::Filter = [$name="postgres", $path="testtable", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb", ["port"]="7772", ["sql_addition"]="ON CONFLICT (i) DO UPDATE SET s=EXCLUDED.s")];
