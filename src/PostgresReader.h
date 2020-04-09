@@ -36,15 +36,15 @@ protected:
 
 private:
 	// note - EscapeIdentifier is replicated in writier
-	string EscapeIdentifier(const char* identifier);
-	string LookupParam(const ReaderInfo& info, const string name) const;
-	std::unique_ptr<threading::Value> EntryToVal(string s, const threading::Field* type);
+	std::string EscapeIdentifier(const char* identifier);
+	std::string LookupParam(const ReaderInfo& info, const std::string name) const;
+	std::unique_ptr<threading::Value> EntryToVal(std::string s, const threading::Field* type);
 
 	PGconn *conn;
 	std::unique_ptr<threading::formatter::Ascii> io;
 
 	const threading::Field* const * fields; // raw mapping
-	string query;
+	std::string query;
 	int num_fields;
 };
 

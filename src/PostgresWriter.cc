@@ -20,7 +20,7 @@ using threading::Field;
 
 PostgreSQL::PostgreSQL(WriterFrontend* frontend) : WriterBackend(frontend)
 	{
-	io = unique_ptr<threading::formatter::Ascii>(new threading::formatter::Ascii(this, threading::formatter::Ascii::SeparatorInfo()));
+	io = std::unique_ptr<threading::formatter::Ascii>(new threading::formatter::Ascii(this, threading::formatter::Ascii::SeparatorInfo()));
 
 	default_hostname.assign(
 		(const char*) BifConst::LogPostgres::default_hostname->Bytes(),
@@ -44,9 +44,9 @@ PostgreSQL::~PostgreSQL()
 		PQfinish(conn);
 	}
 
-string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
+std::string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 	{
-	string type;
+	std::string type;
 
 	switch ( arg_type ) {
 	case TYPE_BOOL:
@@ -95,7 +95,7 @@ string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 
 	default:
 		Error(Fmt("unsupported field format %d ", arg_type));
-		return string();
+		return std::string();
 	}
 
 	return type;
@@ -104,12 +104,12 @@ string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 // preformat the insert string that we only need to create once during our lifetime
 bool PostgreSQL::CreateInsert(int num_fields, const Field* const * fields, std::string add_string)
 	{
-	string names = "INSERT INTO "+table+" ( ";
-	string values("VALUES (");
+	std::string names = "INSERT INTO "+table+" ( ";
+	std::string values("VALUES (");
 
 	for ( int i = 0; i < num_fields; ++i )
 		{
-		string fieldname = EscapeIdentifier(fields[i]->name);
+		std::string fieldname = EscapeIdentifier(fields[i]->name);
 		if ( fieldname.empty() )
 			return false;
 
@@ -128,25 +128,25 @@ bool PostgreSQL::CreateInsert(int num_fields, const Field* const * fields, std::
 	return true;
 	}
 
-string PostgreSQL::LookupParam(const WriterInfo& info, const string name) const
+std::string PostgreSQL::LookupParam(const WriterInfo& info, const std::string name) const
 	{
-	map<const char*, const char*>::const_iterator it = info.config.find(name.c_str());
+	std::map<const char*, const char*>::const_iterator it = info.config.find(name.c_str());
 	if ( it == info.config.end() )
-		return string();
+		return std::string();
 	else
 		return it->second;
 	}
 
 // note - EscapeIdentifier is replicated in reader
-string PostgreSQL::EscapeIdentifier(const char* identifier)
+std::string PostgreSQL::EscapeIdentifier(const char* identifier)
 	{
 	char* escaped = PQescapeIdentifier(conn, identifier, strlen(identifier));
 	if ( escaped == nullptr )
 		{
 		Error(Fmt("Error while escaping identifier '%s': %s", identifier, PQerrorMessage(conn)));
-		return string();
+		return std::string();
 		}
-	string out = escaped;
+	std::string out = escaped;
 	PQfreemem(escaped);
 
 	return out;
@@ -155,17 +155,17 @@ string PostgreSQL::EscapeIdentifier(const char* identifier)
 bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 			    const Field* const * fields)
 	{
-	string conninfo = LookupParam(info, "conninfo");
+	std::string conninfo = LookupParam(info, "conninfo");
 	if ( conninfo.empty() )
 		{
-		string hostname = LookupParam(info, "hostname");
+		std::string hostname = LookupParam(info, "hostname");
 		if ( hostname.empty() )
 			{
 			MsgThread::Info(Fmt("hostname configuration option not found. Defaulting to %s", default_hostname.c_str()));
 			hostname = default_hostname;
 			}
 
-		string dbname = LookupParam(info, "dbname");
+		std::string dbname = LookupParam(info, "dbname");
 		if ( dbname.empty() )
 			{
 			if ( default_dbname == "" )
@@ -180,22 +180,22 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 				}
 			}
 
-		conninfo = string("host = ") + hostname + " dbname = " + dbname;
+		conninfo = std::string("host = ") + hostname + " dbname = " + dbname;
 
-		string port = LookupParam(info, "port");
+		std::string port = LookupParam(info, "port");
 		if ( ! port.empty() )
 			conninfo += " port = " + port;
 		else if ( default_port >= 0 )
 			conninfo += Fmt(" port = %d", default_port);
 		}
 
-	string add_string = LookupParam(info, "sql_addition");
+	std::string add_string = LookupParam(info, "sql_addition");
 
-	string errorhandling = LookupParam(info, "continue_on_errors");
+	std::string errorhandling = LookupParam(info, "continue_on_errors");
 	if ( !errorhandling.empty() && errorhandling == "T" )
 		ignore_errors = true;
 
-	string bytea = LookupParam(info, "bytea_instead_of_text");
+	std::string bytea = LookupParam(info, "bytea_instead_of_text");
 	if ( !bytea.empty() && bytea == "T" )
 		bytea_instead_text = true;
 
@@ -212,7 +212,7 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 		return false;
 
 
-	string create = "CREATE TABLE IF NOT EXISTS "+table+" (\n"
+	std::string create = "CREATE TABLE IF NOT EXISTS "+table+" (\n"
 		"id SERIAL UNIQUE NOT NULL";
 
 	for ( int i = 0; i < num_fields; ++i )
@@ -221,12 +221,12 @@ bool PostgreSQL::DoInit(const WriterInfo& info, int num_fields,
 
 		create += ",\n";
 
-		string escaped = EscapeIdentifier(field->name);
+		std::string escaped = EscapeIdentifier(field->name);
 		if ( escaped.empty() )
 			return false;
 		create += escaped;
 
-		string type = GetTableType(field->type, field->subtype);
+		std::string type = GetTableType(field->type, field->subtype);
 
 		create += " "+type;
 		/* if ( !field->optional ) {
@@ -261,14 +261,14 @@ bool PostgreSQL::DoHeartbeat(double network_time, double current_time)
 	return true;
 	}
 
-std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
+std::tuple<bool, std::string, int> PostgreSQL::CreateParams(const Value* val)
 	{
 	static std::regex curly_re("\\\\|\"");
 
 	if ( ! val->present )
-		return std::make_tuple(false, string(), 0);
+		return std::make_tuple(false, std::string(), 0);
 
-	string retval;
+	std::string retval;
 	int retlength = 0;
 
 	switch ( val->type ) {
@@ -308,7 +308,7 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 	case TYPE_STRING:
 	case TYPE_FILE:
 	case TYPE_FUNC:
-		retval = string(val->val.string_val.data, val->val.string_val.length);
+		retval = std::string(val->val.string_val.data, val->val.string_val.length);
 		break;
 
 	case TYPE_TABLE:
@@ -317,7 +317,7 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 		bro_int_t size;
 		Value** vals;
 
-		string out("{");
+		std::string out("{");
 		retlength = 1;
 
 		if ( val->type == TYPE_TABLE )
@@ -332,7 +332,7 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 			}
 
 		if ( ! size )
-			return std::make_tuple(false, string(), 0);
+			return std::make_tuple(false, std::string(), 0);
 
 		for ( int i = 0; i < size; ++i )
 			{
@@ -346,7 +346,7 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 				continue;
 				}
 
-			string resstr = std::get<1>(res);
+			std::string resstr = std::get<1>(res);
 			TypeTag type = vals[i]->type;
 			// for all numeric types, we do not need escaping
 			if ( type == TYPE_BOOL || type == TYPE_INT || type == TYPE_COUNT ||
@@ -355,7 +355,7 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 				out += resstr;
 			else
 				{
-				string escaped = std::regex_replace(resstr, curly_re, "\\$&");
+				std::string escaped = std::regex_replace(resstr, curly_re, "\\$&");
 				out += "\"" + escaped + "\"";
 				retlength += 2+escaped.length();
 				}
@@ -369,7 +369,7 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 
 	default:
 		Error(Fmt("unsupported field format %d", val->type ));
-		return std::make_tuple(false, string(), 0);
+		return std::make_tuple(false, std::string(), 0);
 	}
 
 	if ( retlength == 0 )
@@ -380,15 +380,15 @@ std::tuple<bool, string, int> PostgreSQL::CreateParams(const Value* val)
 
 bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** vals)
 	{
-	vector<std::tuple<bool, string, int>> params; // vector in which we compile the string representation of characters
+	std::vector<std::tuple<bool, std::string, int>> params; // vector in which we compile the string representation of characters
 
 	for ( int i = 0; i < num_fields; ++i )
 		params.push_back(CreateParams(vals[i]));
 
-	vector<const char*> params_char; // vector in which we compile the character pointers that we
+	std::vector<const char*> params_char; // vector in which we compile the character pointers that we
 	// then pass to PQexecParams. These do not have to be cleaned up because the srings will be
 	// cleaned up automatically.
-	vector<int> params_length; // vector in which we compile the lengths of the parameters that we
+	std::vector<int> params_length; // vector in which we compile the lengths of the parameters that we
 	// then pass to PQexecParams
 
 	for ( auto &i: params )

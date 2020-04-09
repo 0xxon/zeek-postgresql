@@ -36,20 +36,20 @@ protected:
 	bool DoHeartbeat(double network_time, double current_time) override;
 
 private:
-	string LookupParam(const WriterInfo& info, const string name) const;
+	std::string LookupParam(const WriterInfo& info, const std::string name) const;
 	// note - EscapeIdentifier is replicated in reader
-	string EscapeIdentifier(const char* identifier);
-	std::tuple<bool, string, int> CreateParams(const threading::Value* val);
-	string GetTableType(int, int);
+	std::string EscapeIdentifier(const char* identifier);
+	std::tuple<bool, std::string, int> CreateParams(const threading::Value* val);
+	std::string GetTableType(int, int);
 	bool CreateInsert(int num_fields, const threading::Field* const* fields, const std::string add_string = "");
 
 	PGconn *conn;
 
-	string table;
-	string insert;
+	std::string table;
+	std::string insert;
 
-	string default_hostname;
-	string default_dbname;
+	std::string default_hostname;
+	std::string default_dbname;
 	int default_port;
 
 	bool ignore_errors;

@@ -19,7 +19,7 @@ using threading::Field;
 
 PostgreSQL::PostgreSQL(ReaderFrontend *frontend) : ReaderBackend(frontend)
 	{
-	io = unique_ptr<threading::formatter::Ascii>(new threading::formatter::Ascii(this, threading::formatter::Ascii::SeparatorInfo()));
+	io = std::unique_ptr<threading::formatter::Ascii>(new threading::formatter::Ascii(this, threading::formatter::Ascii::SeparatorInfo()));
 	}
 
 PostgreSQL::~PostgreSQL()
@@ -33,11 +33,11 @@ void PostgreSQL::DoClose()
 	{
 	}
 
-string PostgreSQL::LookupParam(const ReaderInfo& info, const string name) const
+std::string PostgreSQL::LookupParam(const ReaderInfo& info, const std::string name) const
 	{
-	map<const char*, const char*>::const_iterator it = info.config.find(name.c_str());
+	std::map<const char*, const char*>::const_iterator it = info.config.find(name.c_str());
 	if ( it == info.config.end() )
-		return string();
+		return std::string();
 	else
 		return it->second;
 	}
@@ -47,26 +47,26 @@ bool PostgreSQL::DoInit(const ReaderInfo& info, int arg_num_fields, const thread
 	assert(arg_fields);
 	assert(arg_num_fields >= 0);
 
-	string conninfo = LookupParam(info, "conninfo");
+	std::string conninfo = LookupParam(info, "conninfo");
 	if ( conninfo.empty() )
 		{
-		string hostname = LookupParam(info, "hostname");
+		std::string hostname = LookupParam(info, "hostname");
 		if ( hostname.empty() )
 			{
 			MsgThread::Info("hostname configuration option not found. Defaulting to localhost.");
 			hostname = "localhost";
 			}
 
-		string dbname = LookupParam(info, "dbname");
+		std::string dbname = LookupParam(info, "dbname");
 		if ( dbname.empty() )
 			{
 			Error("dbname configuration option not found. Aborting.");
 			return false;
 			}
 
-		conninfo = string("host = ") + hostname + " dbname = " + dbname;
+		conninfo = std::string("host = ") + hostname + " dbname = " + dbname;
 
-		string port = LookupParam(info, "port");
+		std::string port = LookupParam(info, "port");
 		if ( ! port.empty() )
 			conninfo += " port = " + port;
 		}
@@ -90,21 +90,21 @@ bool PostgreSQL::DoInit(const ReaderInfo& info, int arg_num_fields, const thread
 	}
 
 // note - EscapeIdentifier is replicated in writer
-string PostgreSQL::EscapeIdentifier(const char* identifier)
+std::string PostgreSQL::EscapeIdentifier(const char* identifier)
 	{
 	char* escaped = PQescapeIdentifier(conn, identifier, strlen(identifier));
 	if ( escaped == nullptr )
 		{
 		Error(Fmt("Error while escaping identifier '%s': %s", identifier, PQerrorMessage(conn)));
-		return string();
+		return std::string();
 		}
-	string out = escaped;
+	std::string out = escaped;
 	PQfreemem(escaped);
 
 	return out;
 	}
 
-std::unique_ptr<Value> PostgreSQL::EntryToVal(string s, const threading::Field* field)
+std::unique_ptr<Value> PostgreSQL::EntryToVal(std::string s, const threading::Field* field)
 	{
 	std::unique_ptr<Value> val(new Value(field->type, true));
 
@@ -149,7 +149,7 @@ std::unique_ptr<Value> PostgreSQL::EntryToVal(string s, const threading::Field* 
 	case TYPE_SUBNET: {
 		int pos = s.find("/");
 		int width = atoi(s.substr(pos+1).c_str());
-		string addr = s.substr(0, pos);
+		std::string addr = s.substr(0, pos);
 
 		val->val.subnet_val.prefix = io->ParseAddr(addr);
 		val->val.subnet_val.length = width;
@@ -196,7 +196,7 @@ std::unique_ptr<Value> PostgreSQL::EntryToVal(string s, const threading::Field* 
 			it = std::sregex_token_iterator(s.begin(), s.end(), comma_re, -1);
 			}
 
-		unique_ptr<Field> newfield(new Field(*field));
+		std::unique_ptr<Field> newfield(new Field(*field));
 		newfield->type = field->subtype;
 
 		std::vector<std::unique_ptr<Value>> vals;
@@ -211,7 +211,7 @@ std::unique_ptr<Value> PostgreSQL::EntryToVal(string s, const threading::Field* 
 				continue;
 				}
 
-			string element = *it;
+			std::string element = *it;
 
 			// real postgres array and double-colons -> unescape
 			if ( real_array && match_number % 2 == 1 )
@@ -280,7 +280,7 @@ bool PostgreSQL::DoUpdate()
 	mapping.reserve(num_fields);
 
 	for ( int i = 0; i < num_fields; ++i ) {
-		string fieldname = EscapeIdentifier(fields[i]->name);
+		std::string fieldname = EscapeIdentifier(fields[i]->name);
 		if ( fieldname.empty() )
 			return false;
 
@@ -309,7 +309,7 @@ bool PostgreSQL::DoUpdate()
 			else
 				{
 				// PQgetvalue result will be cleaned up by PQclear.
-				string value (PQgetvalue(res, i, mapping[j]), PQgetlength(res, i, mapping[j]));
+				std::string value (PQgetvalue(res, i, mapping[j]), PQgetlength(res, i, mapping[j]));
 				auto res = EntryToVal(value, fields[j]);
 				if ( res == nullptr )
 					{
