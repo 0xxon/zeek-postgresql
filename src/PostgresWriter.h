@@ -13,9 +13,9 @@
 
 namespace logging { namespace writer {
 
-class PostgreSQL : public WriterBackend {
+class PostgreSQL : public zeek::logging::WriterBackend {
 public:
-	PostgreSQL(WriterFrontend* frontend);
+	PostgreSQL(zeek::logging::WriterFrontend* frontend);
 	~PostgreSQL();
 
 	// prohibit copying and moving
@@ -23,12 +23,12 @@ public:
 	PostgreSQL& operator=(const PostgreSQL&) = delete;
 	PostgreSQL(PostgreSQL&&) = delete;
 
-	static WriterBackend* Instantiate(WriterFrontend* frontend)
+	static zeek::logging::WriterBackend* Instantiate(zeek::logging::WriterFrontend* frontend)
 		{ return new PostgreSQL(frontend); }
 
 protected:
-	bool DoInit(const WriterInfo& info, int num_fields, const threading::Field* const* fields) override;
-	bool DoWrite(int num_fields, const threading::Field* const* fields, threading::Value** vals) override;
+	bool DoInit(const WriterInfo& info, int num_fields, const zeek::threading::Field* const* fields) override;
+	bool DoWrite(int num_fields, const zeek::threading::Field* const* fields, zeek::threading::Value** vals) override;
 	bool DoSetBuf(bool enabled) override;
 	bool DoRotate(const char* rotated_path, double open, double close, bool terminating) override;
 	bool DoFlush(double network_time) override;
@@ -39,9 +39,9 @@ private:
 	std::string LookupParam(const WriterInfo& info, const std::string name) const;
 	// note - EscapeIdentifier is replicated in reader
 	std::string EscapeIdentifier(const char* identifier);
-	std::tuple<bool, std::string, int> CreateParams(const threading::Value* val);
+	std::tuple<bool, std::string, int> CreateParams(const zeek::threading::Value* val);
 	std::string GetTableType(int, int);
-	bool CreateInsert(int num_fields, const threading::Field* const* fields, const std::string add_string = "");
+	bool CreateInsert(int num_fields, const zeek::threading::Field* const* fields, const std::string add_string = "");
 
 	PGconn *conn;
 
@@ -55,7 +55,7 @@ private:
 	bool ignore_errors;
 	bool bytea_instead_text;
 
-	std::unique_ptr<threading::formatter::Ascii> io;
+	std::unique_ptr<zeek::threading::formatter::Ascii> io;
 };
 
 }

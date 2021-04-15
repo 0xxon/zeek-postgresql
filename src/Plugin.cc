@@ -7,12 +7,12 @@ namespace plugin { namespace Johanna_PostgreSQL { Plugin plugin; } }
 
 using namespace plugin::Johanna_PostgreSQL;
 
-plugin::Configuration Plugin::Configure()
+zeek::plugin::Configuration Plugin::Configure()
 	{
-	AddComponent(new ::logging::Component("PostgreSQL", ::logging::writer::PostgreSQL::Instantiate));
-	AddComponent(new ::input::Component("PostgreSQL", ::input::reader::PostgreSQL::Instantiate));
+	AddComponent(new zeek::logging::Component("PostgreSQL", ::logging::writer::PostgreSQL::Instantiate));
+	AddComponent(new zeek::input::Component("PostgreSQL", ::input::reader::PostgreSQL::Instantiate));
 
-	plugin::Configuration config;
+	zeek::plugin::Configuration config;
 	config.name = "Johanna::PostgreSQL";
 	config.description = "PostgreSQL log writer and input reader";
 	config.version.major = 0;

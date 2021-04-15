@@ -13,9 +13,9 @@
 
 namespace input { namespace reader {
 
-class PostgreSQL : public ReaderBackend {
+class PostgreSQL : public zeek::input::ReaderBackend {
 public:
-	explicit PostgreSQL(ReaderFrontend* frontend);
+	explicit PostgreSQL(zeek::input::ReaderFrontend* frontend);
 	~PostgreSQL();
 
 	// prohibit copying and moving
@@ -23,10 +23,10 @@ public:
 	PostgreSQL& operator=(const PostgreSQL&) = delete;
 	PostgreSQL(PostgreSQL&&) = delete;
 
-	static ReaderBackend* Instantiate(ReaderFrontend* frontend) { return new PostgreSQL(frontend); }
+	static zeek::input::ReaderBackend* Instantiate(zeek::input::ReaderFrontend* frontend) { return new PostgreSQL(frontend); }
 
 protected:
-	bool DoInit(const ReaderInfo& info, int arg_num_fields, const threading::Field* const* fields) override;
+	bool DoInit(const ReaderInfo& info, int arg_num_fields, const zeek::threading::Field* const* fields) override;
 
 	void DoClose() override;
 
@@ -38,12 +38,12 @@ private:
 	// note - EscapeIdentifier is replicated in writier
 	std::string EscapeIdentifier(const char* identifier);
 	std::string LookupParam(const ReaderInfo& info, const std::string name) const;
-	std::unique_ptr<threading::Value> EntryToVal(std::string s, const threading::Field* type);
+	std::unique_ptr<zeek::threading::Value> EntryToVal(std::string s, const zeek::threading::Field* type);
 
 	PGconn *conn;
-	std::unique_ptr<threading::formatter::Ascii> io;
+	std::unique_ptr<zeek::threading::formatter::Ascii> io;
 
-	const threading::Field* const * fields; // raw mapping
+	const zeek::threading::Field* const * fields; // raw mapping
 	std::string query;
 	int num_fields;
 };

@@ -13,13 +13,13 @@
 #include "PostgresReader.h"
 
 using namespace input::reader;
-using threading::Value;
-using threading::Field;
+using zeek::threading::Value;
+using zeek::threading::Field;
 
 
-PostgreSQL::PostgreSQL(ReaderFrontend *frontend) : ReaderBackend(frontend)
+PostgreSQL::PostgreSQL(zeek::input::ReaderFrontend *frontend) : zeek::input::ReaderBackend(frontend)
 	{
-	io = std::unique_ptr<threading::formatter::Ascii>(new threading::formatter::Ascii(this, threading::formatter::Ascii::SeparatorInfo()));
+	io = std::unique_ptr<zeek::threading::formatter::Ascii>(new zeek::threading::formatter::Ascii(this, zeek::threading::formatter::Ascii::SeparatorInfo()));
 	}
 
 PostgreSQL::~PostgreSQL()
@@ -42,7 +42,7 @@ std::string PostgreSQL::LookupParam(const ReaderInfo& info, const std::string na
 		return it->second;
 	}
 
-bool PostgreSQL::DoInit(const ReaderInfo& info, int arg_num_fields, const threading::Field* const* arg_fields)
+bool PostgreSQL::DoInit(const ReaderInfo& info, int arg_num_fields, const zeek::threading::Field* const* arg_fields)
 	{
 	assert(arg_fields);
 	assert(arg_num_fields >= 0);
@@ -104,18 +104,18 @@ std::string PostgreSQL::EscapeIdentifier(const char* identifier)
 	return out;
 	}
 
-std::unique_ptr<Value> PostgreSQL::EntryToVal(std::string s, const threading::Field* field)
+std::unique_ptr<Value> PostgreSQL::EntryToVal(std::string s, const zeek::threading::Field* field)
 	{
 	std::unique_ptr<Value> val(new Value(field->type, true));
 
 	switch ( field->type ) {
-	case TYPE_ENUM:
-	case TYPE_STRING:
+	case zeek::TYPE_ENUM:
+	case zeek::TYPE_STRING:
 		val->val.string_val.length  = s.size();
-		val->val.string_val.data = copy_string(s.c_str());
+		val->val.string_val.data = zeek::util::copy_string(s.c_str());
 		break;
 
-	case TYPE_BOOL:
+	case zeek::TYPE_BOOL:
 		if ( s == "t" ) {
 			val->val.int_val = 1;
 		} else if ( s == "f" ) {
@@ -126,27 +126,26 @@ std::unique_ptr<Value> PostgreSQL::EntryToVal(std::string s, const threading::Fi
 		}
 		break;
 
-	case TYPE_INT:
+	case zeek::TYPE_INT:
 		val->val.int_val = atoi(s.c_str());
 		break;
 
-	case TYPE_DOUBLE:
-	case TYPE_TIME:
-	case TYPE_INTERVAL:
+	case zeek::TYPE_DOUBLE:
+	case zeek::TYPE_TIME:
+	case zeek::TYPE_INTERVAL:
 		val->val.double_val = atof(s.c_str());
 		break;
 
-	case TYPE_COUNT:
-	case TYPE_COUNTER:
+	case zeek::TYPE_COUNT:
 		val->val.uint_val = atoi(s.c_str());
 		break;
 
-	case TYPE_PORT:
+	case zeek::TYPE_PORT:
 		val->val.port_val.port = atoi(s.c_str());
 		val->val.port_val.proto = TRANSPORT_UNKNOWN;
 		break;
 
-	case TYPE_SUBNET: {
+	case zeek::TYPE_SUBNET: {
 		int pos = s.find("/");
 		int width = atoi(s.substr(pos+1).c_str());
 		std::string addr = s.substr(0, pos);
@@ -156,12 +155,12 @@ std::unique_ptr<Value> PostgreSQL::EntryToVal(std::string s, const threading::Fi
 		break;
 
 		}
-	case TYPE_ADDR:
+	case zeek::TYPE_ADDR:
 		val->val.addr_val = io->ParseAddr(s);
 		break;
 
-	case TYPE_TABLE:
-	case TYPE_VECTOR:
+	case zeek::TYPE_TABLE:
+	case zeek::TYPE_VECTOR:
 		// First - common stuff
 		// Then - initialization for table.
 		// Then - initialization for vector.
@@ -241,12 +240,12 @@ std::unique_ptr<Value> PostgreSQL::EntryToVal(std::string s, const threading::Fi
 		for ( decltype(vals.size()) i = 0; i<vals.size(); ++i )
 			lvals[i] = vals[i].release();
 
-		if ( field->type == TYPE_TABLE )
+		if ( field->type == zeek::TYPE_TABLE )
 			{
 			val->val.set_val.vals = lvals;
 			val->val.set_val.size = vals.size();
 			}
-		else if ( field->type == TYPE_VECTOR )
+		else if ( field->type == zeek::TYPE_VECTOR )
 			{
 			val->val.vector_val.vals = lvals;
 			val->val.vector_val.size = vals.size();

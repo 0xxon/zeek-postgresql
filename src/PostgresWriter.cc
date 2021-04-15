@@ -15,24 +15,24 @@
 
 using namespace logging;
 using namespace writer;
-using threading::Value;
-using threading::Field;
+using zeek::threading::Value;
+using zeek::threading::Field;
 
-PostgreSQL::PostgreSQL(WriterFrontend* frontend) : WriterBackend(frontend)
+PostgreSQL::PostgreSQL(zeek::logging::WriterFrontend* frontend) : zeek::logging::WriterBackend(frontend)
 	{
-	io = std::unique_ptr<threading::formatter::Ascii>(new threading::formatter::Ascii(this, threading::formatter::Ascii::SeparatorInfo()));
+	io = std::unique_ptr<zeek::threading::formatter::Ascii>(new zeek::threading::formatter::Ascii(this, zeek::threading::formatter::Ascii::SeparatorInfo()));
 
 	default_hostname.assign(
-		(const char*) BifConst::LogPostgres::default_hostname->Bytes(),
-		BifConst::LogPostgres::default_hostname->Len()
+		(const char*) zeek::BifConst::LogPostgres::default_hostname->Bytes(),
+		zeek::BifConst::LogPostgres::default_hostname->Len()
 		);
 
 	default_dbname.assign(
-		(const char*) BifConst::LogPostgres::default_dbname->Bytes(),
-		BifConst::LogPostgres::default_dbname->Len()
+		(const char*) zeek::BifConst::LogPostgres::default_dbname->Bytes(),
+		zeek::BifConst::LogPostgres::default_dbname->Len()
 		);
 
-	default_port = BifConst::LogPostgres::default_port;
+	default_port = zeek::BifConst::LogPostgres::default_port;
 
 	ignore_errors = false;
 	bytea_instead_text = false;
@@ -49,47 +49,46 @@ std::string PostgreSQL::GetTableType(int arg_type, int arg_subtype)
 	std::string type;
 
 	switch ( arg_type ) {
-	case TYPE_BOOL:
+	case zeek::TYPE_BOOL:
 		type = "boolean";
 		break;
 
-	case TYPE_INT:
-	case TYPE_COUNT:
-	case TYPE_COUNTER:
-	case TYPE_PORT:
+	case zeek::TYPE_INT:
+	case zeek::TYPE_COUNT:
+	case zeek::TYPE_PORT:
 		type = "bigint";
 		break;
 
 	/*
-	case TYPE_PORT:
+	case zeek::TYPE_PORT:
 		type = "VARCHAR(10)";
 		break; */
 
-	case TYPE_SUBNET:
-	case TYPE_ADDR:
+	case zeek::TYPE_SUBNET:
+	case zeek::TYPE_ADDR:
 		type = "inet";
 		break;
 
-	case TYPE_TIME:
-	case TYPE_INTERVAL:
-	case TYPE_DOUBLE:
+	case zeek::TYPE_TIME:
+	case zeek::TYPE_INTERVAL:
+	case zeek::TYPE_DOUBLE:
 		type = "double precision";
 		break;
 
-	case TYPE_ENUM:
+	case zeek::TYPE_ENUM:
 		type = "TEXT";
 		break;
 
-	case TYPE_STRING:
-	case TYPE_FILE:
-	case TYPE_FUNC:
+	case zeek::TYPE_STRING:
+	case zeek::TYPE_FILE:
+	case zeek::TYPE_FUNC:
 		type = "TEXT";
 		if ( bytea_instead_text )
 			type = "BYTEA";
 		break;
 
-	case TYPE_TABLE:
-	case TYPE_VECTOR:
+	case zeek::TYPE_TABLE:
+	case zeek::TYPE_VECTOR:
 		type = GetTableType(arg_subtype, 0) + "[]";
 		break;
 
@@ -273,46 +272,45 @@ std::tuple<bool, std::string, int> PostgreSQL::CreateParams(const Value* val)
 
 	switch ( val->type ) {
 
-	case TYPE_BOOL:
+	case zeek::TYPE_BOOL:
 		retval = val->val.int_val ? "T" : "F";
 		break;
 
-	case TYPE_INT:
+	case zeek::TYPE_INT:
 		retval = std::to_string(val->val.int_val);
 		break;
 
-	case TYPE_COUNT:
-	case TYPE_COUNTER:
+	case zeek::TYPE_COUNT:
 		retval = std::to_string(val->val.uint_val);
 		break;
 
-	case TYPE_PORT:
+	case zeek::TYPE_PORT:
 		retval = std::to_string(val->val.port_val.port);
 		break;
 
-	case TYPE_SUBNET:
+	case zeek::TYPE_SUBNET:
 		retval = io->Render(val->val.subnet_val);
 		break;
 
-	case TYPE_ADDR:
+	case zeek::TYPE_ADDR:
 		retval = io->Render(val->val.addr_val);
 		break;
 
-	case TYPE_TIME:
-	case TYPE_INTERVAL:
-	case TYPE_DOUBLE:
+	case zeek::TYPE_TIME:
+	case zeek::TYPE_INTERVAL:
+	case zeek::TYPE_DOUBLE:
 		retval = std::to_string(val->val.double_val);
 		break;
 
-	case TYPE_ENUM:
-	case TYPE_STRING:
-	case TYPE_FILE:
-	case TYPE_FUNC:
+	case zeek::TYPE_ENUM:
+	case zeek::TYPE_STRING:
+	case zeek::TYPE_FILE:
+	case zeek::TYPE_FUNC:
 		retval = std::string(val->val.string_val.data, val->val.string_val.length);
 		break;
 
-	case TYPE_TABLE:
-	case TYPE_VECTOR:
+	case zeek::TYPE_TABLE:
+	case zeek::TYPE_VECTOR:
 		{
 		bro_int_t size;
 		Value** vals;
@@ -320,7 +318,7 @@ std::tuple<bool, std::string, int> PostgreSQL::CreateParams(const Value* val)
 		std::string out("{");
 		retlength = 1;
 
-		if ( val->type == TYPE_TABLE )
+		if ( val->type == zeek::TYPE_TABLE )
 			{
 			size = val->val.set_val.size;
 			vals = val->val.set_val.vals;
@@ -347,11 +345,11 @@ std::tuple<bool, std::string, int> PostgreSQL::CreateParams(const Value* val)
 				}
 
 			std::string resstr = std::get<1>(res);
-			TypeTag type = vals[i]->type;
+			zeek::TypeTag type = vals[i]->type;
 			// for all numeric types, we do not need escaping
-			if ( type == TYPE_BOOL || type == TYPE_INT || type == TYPE_COUNT ||
-					type == TYPE_COUNTER || type == TYPE_PORT || type == TYPE_TIME ||
-					type == TYPE_INTERVAL || type == TYPE_DOUBLE )
+			if ( type == zeek::TYPE_BOOL || type == zeek::TYPE_INT || type == zeek::TYPE_COUNT ||
+					type == zeek::TYPE_PORT || type == zeek::TYPE_TIME ||
+					type == zeek::TYPE_INTERVAL || type == zeek::TYPE_DOUBLE )
 				out += resstr;
 			else
 				{
