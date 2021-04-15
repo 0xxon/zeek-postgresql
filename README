@@ -14,12 +14,12 @@ Installation
 ------------
 
 After installing PostgreSQL, you can install the Bro PostgreSQL module
-either using bro-pkg, or manually via the command-line.
+either using zkg, or manually via the command-line.
 
-To install the plugin using bro-pkg, use
+To install the plugin using zkg, use
 
 ```console
-# bro-pkg install 0xxon/bro-postgresql
+# zkg install 0xxon/bro-postgresql
 ```
 
 To install manually from the cloned repository, use::
@@ -30,11 +30,11 @@ To install manually from the cloned repository, use::
 
 If PostgreSQL is installed in a non-standard location, add
 ``--with-postgresql=<postgresql-base-directory`` to the ``configure`` command.
-Use bro -N to verify correct installation:
+Use zeek -N to verify correct installation:
 
 ```console
-# bro -N Johanna::PostgreSQL
-Johanna::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version 0.1)
+# zeek -N Johanna::PostgreSQL
+Johanna::PostgreSQL - PostgreSQL log writer and input reader (dynamic, version 0.2.0)
 ```
 
 Logging Data into PostgreSQL databases
@@ -44,8 +44,8 @@ The easiest way to add PostgreSQL logging is by adding a logging filter to an
 already existing logging stream. This first example also sends the conn.log
 to PostgreSQL:
 
-```bro
-event bro_init()
+```zeek
+event zeek_init()
   {
   local filter: Log::Filter = [$name="postgres", $path="conn", $writer=Log::WRITER_POSTGRESQL, $config=table(["dbname"]="testdb")];
   Log::add_filter(Conn::LOG, filter);
@@ -74,7 +74,7 @@ event line(description: Input::EventDescription, tpe: Input::Event, r: InfoType)
   print r;
   }
 
-event bro_init()
+event zeek_init()
   {
   Input::add_event([$source="select ts, uid, duration from conn;", $name="postgres", $fields=InfoType, $ev=line, $want_record=T,
     $reader=Input::READER_POSTGRESQL, $config=table(["dbname"]="testdb")]);
