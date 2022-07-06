@@ -5,10 +5,10 @@
 #include <vector>
 #include <regex>
 
-#include "zeek-config.h"
+#include "zeek/zeek-config.h"
 
-#include "NetVar.h"
-#include "threading/SerialTypes.h"
+#include "zeek/NetVar.h"
+#include "zeek/threading/SerialTypes.h"
 
 #include "PostgresWriter.h"
 #include "postgresql.bif.h"

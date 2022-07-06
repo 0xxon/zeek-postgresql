@@ -7,8 +7,8 @@
 #include <vector>
 #include <memory> // for unique_ptr
 
-#include "input/ReaderFrontend.h"
-#include "threading/formatters/Ascii.h"
+#include "zeek/input/ReaderFrontend.h"
+#include "zeek/threading/formatters/Ascii.h"
 #include <libpq-fe.h>
 
 namespace input { namespace reader {

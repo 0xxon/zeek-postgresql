@@ -7,8 +7,8 @@
 
 #include <memory> // for unique_ptr
 
-#include "logging/WriterBackend.h"
-#include "threading/formatters/Ascii.h"
+#include "zeek/logging/WriterBackend.h"
+#include "zeek/threading/formatters/Ascii.h"
 #include "libpq-fe.h"
 
 namespace logging { namespace writer {

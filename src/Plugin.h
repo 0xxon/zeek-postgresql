@@ -2,7 +2,7 @@
 #ifndef BRO_PLUGIN_BRO_POSTGRES
 #define BRO_PLUGIN_BRO_POSTGRES
 
-#include <plugin/Plugin.h>
+#include <zeek/plugin/Plugin.h>
 
 namespace plugin {
 namespace Johanna_PostgreSQL {
