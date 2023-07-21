@@ -5,7 +5,7 @@
 # @TEST-EXEC: sleep 5
 # @TEST-EXEC: createdb -p 7772 testdb
 # @TEST-EXEC: zeek %INPUT || true
-# @TEST-EXEC: echo "select * from ssh" | psql -A -p 7772 testdb >ssh.out 2>&1 || true
+# @TEST-EXEC: echo "copy ssh to stdout" | psql -A -p 7772 testdb >ssh.out 2>&1 || true
 # TEST-EXEC: pg_dump -p 7772 -a testdb > ssh.out 2>&1 || true
 # @TEST-EXEC: pg_ctl stop -D postgres -m fast
 # @TEST-EXEC: btest-diff ssh.out

@@ -312,7 +312,7 @@ std::tuple<bool, std::string, int> PostgreSQL::CreateParams(const Value* val)
 	case zeek::TYPE_TABLE:
 	case zeek::TYPE_VECTOR:
 		{
-		bro_int_t size;
+		zeek_int_t size;
 		Value** vals;
 
 		std::string out("{");
@@ -330,7 +330,7 @@ std::tuple<bool, std::string, int> PostgreSQL::CreateParams(const Value* val)
 			}
 
 		if ( ! size )
-			return std::make_tuple(false, std::string(), 0);
+			return std::make_tuple(true, std::string("{}"), 2);
 
 		for ( int i = 0; i < size; ++i )
 			{
@@ -384,7 +384,7 @@ bool PostgreSQL::DoWrite(int num_fields, const Field* const* fields, Value** val
 		params.push_back(CreateParams(vals[i]));
 
 	std::vector<const char*> params_char; // vector in which we compile the character pointers that we
-	// then pass to PQexecParams. These do not have to be cleaned up because the srings will be
+	// then pass to PQexecParams. These do not have to be cleaned up because the strings will be
 	// cleaned up automatically.
 	std::vector<int> params_length; // vector in which we compile the lengths of the parameters that we
 	// then pass to PQexecParams

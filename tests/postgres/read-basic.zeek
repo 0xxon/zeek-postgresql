@@ -43,8 +43,8 @@ ALTER SEQUENCE ssh_id_seq OWNED BY ssh.id;
 ALTER TABLE ONLY ssh ALTER COLUMN id SET DEFAULT nextval('ssh_id_seq'::regclass);
 
 COPY ssh (id, b, i, e, c, p, sn, a, d, t, iv, s, sc, ss, se, vc, ve, f) FROM stdin;
-1	t	-42	SSH::LOG	21	123	10.0.0.0/24	1.2.3.4	3.14000000000000012	1454444233.58016205	100	hurz	{2,4,1,3}	{CC,AA,BB}	\N	{10,20,30}	\N	SSHTest::foo\n{ \nif (0 < SSHTest::i) \n\treturn (Foo);\nelse\n\treturn (Bar);\n\n}
-2	t	-43	SSH::LOG	21	123	10.0.0.0/24	1.2.3.4	3.14000000000000012	1454444233.58016205	100	hurz	{2,4,1,3}	{"", "\\"", "{\\"\\"},\\"", "\\\\\\"\\\\{}", "NULL"}	\N	{10,20,30}	\N	SSHTest::foo\n{ \nif (0 < SSHTest::i) \n\treturn (Foo);\nelse\n\treturn (Bar);\n\n}
+1	t	-42	SSH::LOG	21	123	10.0.0.0/24	1.2.3.4	3.14000000000000012	1454444233.58016205	100	hurz	{2,4,1,3}	{CC,AA,BB}	{}	{10,20,30}	{}	SSHTest::foo\n{ \nif (0 < SSHTest::i) \n\treturn (Foo);\nelse\n\treturn (Bar);\n\n}
+2	t	-43	SSH::LOG	21	123	10.0.0.0/24	1.2.3.4	3.14000000000000012	1454444233.58016205	100	hurz	{2,4,1,3}	{"", "\\"", "{\\"\\"},\\"", "\\\\\\"\\\\{}", "NULL"}	{}	{10,20,30}	{}	SSHTest::foo\n{ \nif (0 < SSHTest::i) \n\treturn (Foo);\nelse\n\treturn (Bar);\n\n}
 \.
 
 SELECT pg_catalog.setval('ssh_id_seq', 1, true);
