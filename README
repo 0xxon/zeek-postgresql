@@ -13,13 +13,13 @@ This plugin should be considered experimental.
 Installation
 ------------
 
-After installing PostgreSQL, you can install the Bro PostgreSQL module
+After installing PostgreSQL, you can install the Zeek PostgreSQL module
 either using zkg, or manually via the command-line.
 
 To install the plugin using zkg, use
 
 ```console
-# zkg install 0xxon/bro-postgresql
+# zkg install 0xxon/zeek-postgresql
 ```
 
 To install manually from the cloned repository, use::
@@ -56,11 +56,11 @@ This will write to a database named testdb into the table named conn. Note that
 the table will be automatically be created by the PostgreSQL plugin, if it does
 not yet exist. If a table with the specified name already exists, it is used;
 the existing columns have to be compatible with the column names and types that
-the Bro plugin expects.
+the Zeek plugin expects.
 
 Data can be read from PostgreSQL using a script similar to:
 
-```bro
+```zeek
 redef exit_only_after_terminate = T;
 
 type InfoType: record {
@@ -87,18 +87,18 @@ event Input::end_of_data(name: string, source:string)
   }
 ```
 
-By default, the plugin connects to PostgreSQL as the user running Bro,
+By default, the plugin connects to PostgreSQL as the user running Zeek,
 without supplying any additional username or password.
 
 Type mapping
 ============
 
-The writer automatically maps the Bro types to the following PostgreSQL data
+The writer automatically maps the Zeek types to the following PostgreSQL data
 types:
 
 <table>
 <tr>
-<th>Bro type</th>
+<th>Zeek type</th>
 <th>PostgreSQL type</th>
 </tr><tr><td>Bool</td><td>boolean</td>
 </tr><tr><td>int</td><td>bigint</td>
